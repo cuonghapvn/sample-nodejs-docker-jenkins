@@ -32,8 +32,14 @@ pipeline {
     stage('Deploy Image') {
       steps{
          script {
-            docker.withRegistry( '', registryCredential ) {
-            dockerImage.push("latest")
+            //docker.withRegistry( '', registryCredential ) {
+            //dockerImage.push("latest")
+            withCredentials([[$class: 'UsernamePasswordMultiBinding', 
+                        credentialsId: 'docker_registry_server',
+                        usernameVariable: 'USERNAME', passwordVariable: 'PASSWORD']]) {
+              sh 'docker login -u $USERNAME -p $PASSWORD'
+            }
+            sh "docker push cuonghapvn/hellonode:latest"
           }
         }
       }
