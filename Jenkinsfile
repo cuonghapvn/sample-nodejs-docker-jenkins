@@ -1,36 +1,36 @@
-node {
-    def app
-
+pipeline {
+  environment {
+    registry = "cuonghapvn/hellonode"
+    registryCredential = 'docker_registry_server'
+  }
+  agent any
+  def app
+  stages {
     stage('Clone repository') {
-        /* Let's make sure we have the repository cloned to our workspace */
-
-        checkout scm
+        steps {
+            checkout scm
+        }
     }
-
     stage('Build image') {
-        /* This builds the actual image; synonymous to
-         * docker build on the command line */
-
-        app = docker.build("cuonghapvn/hellonode")
+        steps {
+            app = docker.build("cuonghapvn/hellonode")
+        }
     }
 
     stage('Test image') {
-        /* Ideally, we would run a test framework against our image.
-         * For this example, we're using a Volkswagen-type approach ;-) */
-
-        app.inside {
-            sh 'echo "Tests passed"'
+        steps {
+            app.inside {
+                sh 'echo "Tests passed"'
+            }
         }
     }
 
     stage('Push image') {
-        /* Finally, we'll push the image with two tags:
-         * First, the incremental build number from Jenkins
-         * Second, the 'latest' tag.
-         * Pushing multiple tags is cheap, as all the layers are reused. */
-        docker.withRegistry('https://hub.docker.com', 'docker_registry_server') {
-            app.push("${env.BUILD_NUMBER}")
-            app.push("latest")
+        steps{
+            script {
+              docker.build registry + ":$BUILD_NUMBER"
+            }
         }
     }
+  }
 }
