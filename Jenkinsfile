@@ -2,35 +2,46 @@ pipeline {
   environment {
     registry = "cuonghapvn/hellonode"
     registryCredential = 'docker_registry_server'
+    dockerImage = ''
   }
   agent any
-  def app
+  tools {nodejs "node" }
   stages {
-    stage('Clone repository') {
-        steps {
-            checkout scm
-        }
+    stage('Cloning Git') {
+      steps {
+        checkout scm
+      }
     }
-    stage('Build image') {
-        steps {
-            app = docker.build("cuonghapvn/hellonode")
-        }
+    stage('Build') {
+       steps {
+         sh 'npm install'
+       }
     }
-
-    stage('Test image') {
-        steps {
-            app.inside {
-                sh 'echo "Tests passed"'
-            }
-        }
+    stage('Test') {
+      steps {
+        sh 'npm test'
+      }
     }
-
-    stage('Push image') {
-        steps{
-            script {
-              docker.build registry + ":$BUILD_NUMBER"
-            }
+    stage('Building image') {
+      steps{
+        script {
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
         }
+      }
+    }
+    stage('Deploy Image') {
+      steps{
+         script {
+            docker.withRegistry( '', registryCredential ) {
+            dockerImage.push()
+          }
+        }
+      }
+    }
+    stage('Remove Unused docker image') {
+      steps{
+        sh "docker rmi $registry:$BUILD_NUMBER"
+      }
     }
   }
 }
